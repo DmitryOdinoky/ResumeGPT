@@ -69,20 +69,19 @@ class CVsInfoExtractor:
     
     # Defines internal function to normalize a JSON response from GPT
     def _normalize_gpt_json_response(self, CV_Filename, json_response):
+        CV_Filename_df = pd.DataFrame([CV_Filename], columns=['CV_Filename'])
+        df_CV_Info_Json = pd.DataFrame([[json_response]], columns=['All_Info_JSON'])
         
-        # Creates a DataFrame with one column "CV_Filename", the values of this column is from the "CV_Filename"
-        CV_Filename_df = pd.DataFrame([CV_Filename], columns = ['CV_Filename'])
-
-        # Creates a DataFrame with one column "All_Info_JSON", the values of this column is the JSON response
-        df_CV_Info_Json = pd.DataFrame([[json_response]], columns = ['All_Info_JSON'])
-
-        # Normalize the JSON response, flattening it into a table
-        df_CV_Info_Json_normalized = pd.json_normalize(json_response)
-
-        # Concatenates the three DataFrame along the columns
+        if json_response is None:
+            print(f"Warning: No valid JSON for {CV_Filename}, skipping normalization.")
+            df_CV_Info_Json_normalized = pd.DataFrame([{}])  # Empty dict to avoid empty DataFrame issues
+        elif isinstance(json_response, list):
+            print(f"Warning: JSON for {CV_Filename} is a list, normalizing first item.")
+            df_CV_Info_Json_normalized = pd.json_normalize(json_response[0] if json_response else {})
+        else:
+            df_CV_Info_Json_normalized = pd.json_normalize(json_response)
+        
         df = pd.concat([CV_Filename_df, df_CV_Info_Json_normalized, df_CV_Info_Json], axis=1)
-        
-        # Returns the final DataFrame
         return df
 
 
@@ -99,50 +98,30 @@ class CVsInfoExtractor:
 
 
     # Define the internal function _gpt_pipeline
-    def _gpt_pipeline(self, row, model = 'gpt-3.5-turbo'):
-
-        # Retrieve the CV Filename and Content from the given row
+    def _gpt_pipeline(self, row, model='gpt-3.5-turbo'):
         CV_Filename = row['CV_Filename']
         CV_Content = row['CV_Content']
-
-        # Sleep for 5 seconds to delay the next operation
         time.sleep(5)
         
         try:
-            # Print status message indicating GPT is being called for CV info extraction
+            print(f"Debug: CV Content for {CV_Filename}: {CV_Content[:200]}...")  # First 200 chars
             print('Calling GPT For CV Info Extraction...')
-
-            # Call the GPT model for CV information extraction
             json_response = self._call_gpt_for_cv_info_extraction(prompt=self.prompt, cv_content=CV_Content, model=model)
-
-            # Print status message indicating normalization of GPT response
-            print('Normalizing GPT Response...')
-
-            # Normalize the GPT JSON response
-            df = self._normalize_gpt_json_response(CV_Filename, json_response)
-
-            # Print status message indicating that the results are being appended to the CSV file
-            print('Appending Results To The CSV File...')
-
-            # Write the normalized response to a file
-            self._write_response_to_file(df)
+            print(f"Debug: JSON response for {CV_Filename}: {json_response}")
             
-            # Print a line for clarity in the output
+            print('Normalizing GPT Response...')
+            df = self._normalize_gpt_json_response(CV_Filename, json_response)
+            print('Appending Results To The CSV File...')
+            self._write_response_to_file(df)
             print('----------------------------------------------')
-
-            # Return the GPT JSON response
             return json_response
-
-        # Catch an exception when the tokens don't fit in the chosen GPT model
         except InvalidRequestError as e:
-            # Print the error that occurred
             print('An Error Occurred:', str(e))
-
-            # Print status message indicating that gpt-4 is being called instead
             print("Tokens don't fit gpt-3.5-turbo, calling gpt-4...")
-
-            # Retry the pipeline with the gpt-4 model
-            return self._gpt_pipeline(row, model = 'gpt-4')
+            return self._gpt_pipeline(row, model='gpt-4')
+        except Exception as e:
+            print(f"Unexpected Error for {CV_Filename}: {str(e)}")
+            return None
 
 
     # Define the internal function _write_final_results_to_excel

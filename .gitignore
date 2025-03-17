@@ -1,7 +1,12 @@
-CVs/*.pdf
-!CVs/Ali\ Abuharb's\ CV.pdf
-!CVs/Deemah_Alabdulaali_Resume.pdf
-Notebooks
-resumegpt_venv
-ResumeGPT_Workflow/ResumeGPT_Workflow.pptx
-__pycache__
+# Ignore virtual environment
+resumegpt_venv_311/
+
+# Other common Python ignores (optional)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+*.log
