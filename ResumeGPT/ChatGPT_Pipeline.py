@@ -81,6 +81,77 @@ class CVsInfoExtractor:
         else:
             df_CV_Info_Json_normalized = pd.json_normalize(json_response)
         
+        # Ensure "University Education" exists and is a list; if not, set to empty list
+        if 'University Education' not in df_CV_Info_Json_normalized.columns:
+            df_CV_Info_Json_normalized['University Education'] = [[]]
+        elif not isinstance(df_CV_Info_Json_normalized['University Education'].iloc[0], list):
+            df_CV_Info_Json_normalized['University Education'] = [[]]
+        
+        # Ensure "Languages" exists and is a list; if not, set to empty list
+        if 'Languages' not in df_CV_Info_Json_normalized.columns:
+            df_CV_Info_Json_normalized['Languages'] = [[]]
+        elif not isinstance(df_CV_Info_Json_normalized['Languages'].iloc[0], list):
+            df_CV_Info_Json_normalized['Languages'] = [[]]
+        
+        # Ensure "Email" exists and is a string; if not, set to empty string
+        if 'Email' not in df_CV_Info_Json_normalized.columns:
+            df_CV_Info_Json_normalized['Email'] = ""
+        elif not isinstance(df_CV_Info_Json_normalized['Email'].iloc[0], str):
+            df_CV_Info_Json_normalized['Email'] = ""
+        
+        # Ensure "Phone Number" exists and is a string; if not, set to empty string
+        if 'Phone Number' not in df_CV_Info_Json_normalized.columns:
+            df_CV_Info_Json_normalized['Phone Number'] = ""
+        elif not isinstance(df_CV_Info_Json_normalized['Phone Number'].iloc[0], str):
+            df_CV_Info_Json_normalized['Phone Number'] = ""
+        
+        # Ensure "Top 3 Technical Skills" exists and is a list; if not, set to empty list
+        if 'Top 3 Technical Skills' not in df_CV_Info_Json_normalized.columns:
+            df_CV_Info_Json_normalized['Top 3 Technical Skills'] = [[]]
+        elif not isinstance(df_CV_Info_Json_normalized['Top 3 Technical Skills'].iloc[0], list):
+            df_CV_Info_Json_normalized['Top 3 Technical Skills'] = [[]]
+        
+        # If "Top 3 Technical Skills" is empty, try to extract skills from "Top 5 Courses/Certifications"
+        tech_skills = df_CV_Info_Json_normalized['Top 3 Technical Skills'].iloc[0]
+        if not tech_skills:  # If empty list
+            courses = df_CV_Info_Json_normalized.get('Top 5 Courses/Certifications', [[]]).iloc[0]
+            if isinstance(courses, list) and courses:
+                # Simple heuristic: extract keywords that might indicate technical skills
+                extracted_skills = []
+                for course in courses:
+                    course_lower = str(course).lower()
+                    if 'python' in course_lower:
+                        extracted_skills.append('Python')
+                    if 'sql' in course_lower:
+                        extracted_skills.append('SQL')
+                    if 'aws' in course_lower:
+                        extracted_skills.append('AWS')
+                    if 'java' in course_lower:
+                        extracted_skills.append('Java')
+                    if 'machine learning' in course_lower:
+                        extracted_skills.append('Machine Learning')
+                    # Add more mappings as needed
+                # Take top 3 unique skills
+                extracted_skills = list(dict.fromkeys(extracted_skills))[:3]
+                df_CV_Info_Json_normalized['Top 3 Technical Skills'] = [extracted_skills]
+        
+        # Ensure "Suitable Position" exists and is a list of dictionaries; if not, set to empty list
+        if 'Suitable Position' not in df_CV_Info_Json_normalized.columns:
+            df_CV_Info_Json_normalized['Suitable Position'] = [[]]
+        elif not isinstance(df_CV_Info_Json_normalized['Suitable Position'].iloc[0], list):
+            df_CV_Info_Json_normalized['Suitable Position'] = [[]]
+        else:
+            # Validate the format of "Suitable Position" entries
+            suitable_positions = df_CV_Info_Json_normalized['Suitable Position'].iloc[0]
+            validated_positions = []
+            for pos in suitable_positions:
+                if (isinstance(pos, dict) and 
+                    'position' in pos and isinstance(pos['position'], str) and 
+                    'suitability' in pos and isinstance(pos['suitability'], (int, float)) and 
+                    0.0 <= pos['suitability'] <= 1.0):
+                    validated_positions.append(pos)
+            df_CV_Info_Json_normalized['Suitable Position'] = [validated_positions]
+        
         df = pd.concat([CV_Filename_df, df_CV_Info_Json_normalized, df_CV_Info_Json], axis=1)
         return df
 
