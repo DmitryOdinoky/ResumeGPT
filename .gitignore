@@ -13,3 +13,7 @@ venv/
 
 .DS_Store
 CVs/.DS_Store
+Output/.DS_Store
+ResumeGPT/.DS_Store
+Engineered_Prompt/.DS_Store
+.vscode
