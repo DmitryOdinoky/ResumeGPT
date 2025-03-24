@@ -1,5 +1,8 @@
 # ResumeGPT
 
+This is customized fork of the original repo: https://github.com/Aillian/ResumeGPT.git
+
+
 ResumeGPT is a Python package designed to extract structured information from a PDF Curriculum Vitae (CVs)/Resumes documents. It leverages OCR technology and utilizes the capabilities of ChatGPT AI language model (GPT-3.5 and GPT-4) to extract pieces of information from the CV content and organize them in a structured Excel-friendly format.
 
 
